@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodep Bot Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #090814, #181534, #0d0b1d);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ---------------- ОТДЕЛЫ / ВКЛАДКИ ---------------- */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---------------- ШАПКА ---------------- */
+        .welcome-card {
+            background: linear-gradient(135deg, rgba(255, 153, 102, 0.15), rgba(255, 94, 98, 0.05));
+            border: 1px solid rgba(255, 153, 102, 0.25);
+            border-radius: 24px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-card h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff9966, #ff5e62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .welcome-card p {
+            font-size: 14px;
+            color: #a0a0ba;
+        }
+
+        /* ---------------- КАРТОЧКИ ---------------- */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #d1d1e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .balance-big {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffd700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            margin: 10px 0;
+        }
+
+        /* ---------------- СЕТКА ИГР ---------------- */
+        .games-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .game-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 18px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .game-card:active {
+            transform: scale(0.95);
+            border-color: #00b4db;
+        }
+
+        .game-card .icon {
+            font-size: 32px;
+            margin-bottom: 6px;
+            transition: transform 0.3s ease;
+        }
+
+        .game-card h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .game-card p {
+            font-size: 12px;
+            color: #8f8fa8;
+        }
+
+        /* ---------------- АНИМАЦИИ И РЕЗУЛЬТАТ ---------------- */
+        .anim-display {
+            font-size: 36px;
+            letter-spacing: 6px;
+            margin: 15px 0 10px 0;
+            text-align: center;
+            min-height: 50px;
+        }
+
+        .spinning {
+            animation: spin 0.15s infinite linear;
+        }
+
+        @keyframes spin {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+
+        .rolling {
+            animation: roll 0.2s infinite ease-in-out;
+        }
+
+        @keyframes roll {
+            0% { transform: rotate(0deg) translateY(0); }
+            50% { transform: rotate(180deg) translateY(-8px); }
+            100% { transform: rotate(360deg) translateY(0); }
+        }
+
+        .result-box {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #00ffcc;
+            min-height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        /* ---------------- КНОПКИ ---------------- */
+        .btn-action {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            color: #ffffff;
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 180, 219, 0.35);
+            transition: transform 0.15s;
+        }
+
+        .btn-action:active {
+            transform: scale(0.97);
+        }
+
+        /* ---------------- НИЖНЕЕ МЕНЮ ---------------- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(13, 11, 29, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 420px;
+            margin: 0 auto;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #7a7a95;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+            width: 33%;
+        }
+
+        .nav-item .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: #ff9966;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- 1. ГЛАВНАЯ -->
+        <div id="tab-home" class="tab-content active">
+            <div class="welcome-card">
+                <h1>🔥 Dodep Platform</h1>
+                <p>Анимированное казино в Telegram Mini App!</p>
+            </div>
+
+            <div class="card" style="text-align: center;">
+                <div class="card-title" style="justify-content: center;">⭐ Ваш Баланс</div>
+                <div class="balance-big"><span id="home-balance">10</span> Stars</div>
+                <button class="btn-action" onclick="openSupport()" style="margin-top: 10px;">➕ Пополнить баланс</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🚀 Быстрый старт</div>
+                <p style="font-size: 13px; color: #a0a0ba; margin-bottom: 12px;">Выбери игру с крутой анимацией в меню ниже!</p>
+                <button class="btn-action" style="background: linear-gradient(135deg, #ff9966, #ff5e62);" onclick="switchTab('games')">🎮 В Игровой Зал</button>
+            </div>
+        </div>
+
+        <!-- 2. ИГРОВОЙ ЗАЛ С АНИМАЦИЕЙ -->
+        <div id="tab-games" class="tab-content">
+            <div class="card">
+                <div class="card-title">🎰 Игровой Зал</div>
+                
+                <!-- Блок экрана анимаций -->
+                <div class="anim-display" id="anim-box">🎁 🎰 🎲</div>
+
+                <div class="games-grid">
+                    <div class="game-card" onclick="playSlots()">
+                        <div class="icon">🎰</div>
+                        <h3>Слоты</h3>
+                        <p>Ставка: 1 ⭐</p>
+                    </div>
+                    <div class="game-card" onclick="playDice()">
+                        <div class="icon">🎲</div>
+                        <h3>Кости</h3>
+                        <p>Ставка: 1 ⭐</p>
+                    </div>
+                    <div class="game-card" onclick="playCase(2)">
+                        <div class="icon">📦</div>
+                        <h3>Кейс</h3>
+                        <p>Цена: 2 ⭐</p>
+                    </div>
+                    <div class="game-card" onclick="playCase(5)">
+                        <div class="icon">🎁</div>
+                        <h3>Элитный</h3>
+                        <p>Цена: 5 ⭐</p>
+                    </div>
+                </div>
+                <div class="result-box" id="game-result">Выберите игру для старта</div>
+            </div>
+        </div>
+
+        <!-- 3. ПРОФИЛЬ -->
+        <div id="tab-profile" class="tab-content">
+            <div class="card">
+                <div class="card-title">👤 Профиль игрока</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <span style="color: #8f8fa8;">Имя:</span>
+                        <span id="user-name" style="font-weight: 600;">Игрок</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <span style="color: #8f8fa8;">ID Telegram:</span>
+                        <span id="user-id" style="font-weight: 600;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <span style="color: #8f8fa8;">Баланс:</span>
+                        <span style="font-weight: 700; color: #ffd700;"><span id="profile-balance">10</span> ⭐</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-action" onclick="openSupport()">💸 Вывести средства</button>
+        </div>
+
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+            <div class="nav-icon">🏠</div>
+            <span>Главная</span>
+        </div>
+        <div class="nav-item" id="nav-games" onclick="switchTab('games')">
+            <div class="nav-icon">🎮</div>
+            <span>Игры</span>
+        </div>
+        <div class="nav-item" id="nav-profile" onclick="switchTab('profile')">
+            <div class="nav-icon">👤</div>
+            <span>Профиль</span>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let balance = 10;
+        let isPlaying = false;
+        let userName = tg.initDataUnsafe?.user?.first_name || "Игрок";
+        let userId = tg.initDataUnsafe?.user?.id || "8871078133";
+
+        document.getElementById('user-name').innerText = userName;
+        document.getElementById('user-id').innerText = userId;
+
+        function updateUI() {
+            document.getElementById('home-balance').innerText = balance;
+            document.getElementById('profile-balance').innerText = balance;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+        }
+
+        // --- АНИМИРОВАННЫЕ ИГРЫ ---
+
+        // 🎰 Слоты с вращением барабанов
+        function playSlots() {
+            if (isPlaying) return;
+            if (balance < 1) { alert("Недостаточно звезд!"); return; }
+            
+            isPlaying = true;
+            balance -= 1;
+            updateUI();
+
+            let animBox = document.getElementById('anim-box');
+            let resultBox = document.getElementById('game-result');
+            animBox.className = "anim-display spinning";
+            resultBox.innerText = "🎰 Крутим барабаны...";
+
+            let slotIcons = ["🍎", "🍋", "7️⃣", "💎", "🍒"];
+            let counter = 0;
+
+            let interval = setInterval(() => {
+                let r1 = slotIcons[Math.floor(Math.random() * slotIcons.length)];
+                let r2 = slotIcons[Math.floor(Math.random() * slotIcons.length)];
+                let r3 = slotIcons[Math.floor(Math.random() * slotIcons.length)];
+                animBox.innerText = `${r1} ${r2} ${r3}`;
+                counter++;
+
+                if (counter > 12) {
+                    clearInterval(interval);
+                    animBox.className = "anim-display";
+                    
+                    let win = Math.random() < 0.95 ? 0 : 5;
+                    balance += win;
+                    updateUI();
+
+                    if (win > 0) {
+                        animBox.innerText = "7️⃣ 7️⃣ 7️⃣";
+                        resultBox.innerHTML = `🎉 ДЖЕКПОТ! Выиграно +${win} ⭐`;
+                    } else {
+                        resultBox.innerHTML = `❌ Проигрыш! Попробуй еще раз.`;
+                    }
+                    isPlaying = false;
+                }
+            }, 100);
+        }
+
+        // 🎲 Кости с броском
+        function playDice() {
+            if (isPlaying) return;
+            if (balance < 1) { alert("Недостаточно звезд!"); return; }
+
+            isPlaying = true;
+            balance -= 1;
+            updateUI();
+
+            let animBox = document.getElementById('anim-box');
+            let resultBox = document.getElementById('game-result');
+            animBox.className = "anim-display rolling";
+            resultBox.innerText = "🎲 Бросаем кубики...";
+
+            let diceIcons = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"];
+            let counter = 0;
+
+            let interval = setInterval(() => {
+                let p = Math.floor(Math.random() * 6);
+                let b = Math.floor(Math.random() * 6);
+                animBox.innerText = `👤 ${diceIcons[p]} vs ${diceIcons[b]} 🤖`;
+                counter++;
+
+                if (counter > 10) {
+                    clearInterval(interval);
+                    animBox.className = "anim-display";
+
+                    let player = Math.floor(Math.random() * 6) + 1;
+                    let bot = Math.min(6, Math.floor(Math.random() * 6) + 3);
+
+                    animBox.innerText = `👤 ${diceIcons[player-1]} vs ${diceIcons[bot-1]} 🤖`;
+
+                    if (player > bot) {
+                        balance += 2;
+                        resultBox.innerHTML = `🎉 Вы победили бота! +2 ⭐`;
+                    } else {
+                        resultBox.innerHTML = `❌ Бот оказался сильнее!`;
+                    }
+                    updateUI();
+                    isPlaying = false;
+                }
+            }, 120);
+        }
+
+        // 📦 Кейсы с анимацией прокрутки
+        function playCase(cost) {
+            if (isPlaying) return;
+            if (balance < cost) { alert(`Нужно ${cost} ⭐!`); return; }
+
+            isPlaying = true;
+            balance -= cost;
+            updateUI();
+
+            let animBox = document.getElementById('anim-box');
+            let resultBox = document.getElementById('game-result');
+            animBox.className = "anim-display spinning";
+            resultBox.innerText = "📦 Открываем кейс...";
+
+            let items = ["💎", "🔥", "⭐", "🍒", "7️⃣", "💰"];
+            let counter = 0;
+
+            let interval = setInterval(() => {
+                let r1 = items[Math.floor(Math.random() * items.length)];
+                let r2 = items[Math.floor(Math.random() * items.length)];
+                let r3 = items[Math.floor(Math.random() * items.length)];
+                animBox.innerText = `[ ${r1} | ${r2} | ${r3} ]`;
+                counter++;
+
+                if (counter > 10) {
+                    clearInterval(interval);
+                    animBox.className = "anim-display";
+
+                    let prizes = cost === 2 ? [0, 0, 0, 0, 0, 0, 1, 0, 0, 2] : [0, 0, 0, 0, 0, 0, 2, 0, 0, 10];
+                    let win = prizes[Math.floor(Math.random() * prizes.length)];
+                    balance += win;
+
+                    if (win > 0) {
+                        animBox.innerText = `🎁 ⭐ +${win} ⭐ 🎁`;
+                        resultBox.innerHTML = `🎉 Из кейса выпало: +${win} ⭐`;
+                    } else {
+                        animBox.innerText = `📦 ❌ 📦`;
+                        resultBox.innerHTML = `❌ Пустой кейс!`;
+                    }
+                    updateUI();
+                    isPlaying = false;
+                }
+            }, 120);
+        }
+
+        function openSupport() {
+            window.open('http://2.27.21.133:2401/Krasava', '_blank');
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
